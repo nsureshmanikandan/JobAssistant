@@ -5,7 +5,9 @@ from app.criteria import build_criteria_text, get_or_create_criteria, primary_lo
 from app.db.session import get_session
 from app.db.models import Job, ResumeVersion, Application
 from app.llm.factory import get_llm_provider
-from app.services.tailoring import tailor_job, build_cover_letter_header, extract_candidate_name
+from app.services.tailoring import (
+    tailor_job, build_cover_letter_header, extract_candidate_name, build_pdf_filename,
+)
 from app.services.scoring import score_job
 from app.services.export import render_resume_pdf, render_cover_letter_pdf
 from app.services.dedupe import job_dedupe_key
@@ -135,13 +137,23 @@ async def tailor(job_id: int, session: Session = Depends(get_session)):
     return job
 
 
+def _candidate_name(session: Session) -> str:
+    master = session.exec(select(ResumeVersion).where(ResumeVersion.is_master.is_(True))).first()
+    return extract_candidate_name(master.content) if master else "Candidate"
+
+
 @router.get("/{job_id}/resume.pdf")
 def download_resume_pdf(job_id: int, session: Session = Depends(get_session)):
     job = session.get(Job, job_id)
     if job is None or job.tailored_resume is None:
         raise HTTPException(status_code=404, detail="No tailored resume for this job yet")
     pdf_bytes = render_resume_pdf(job.tailored_resume)
-    return Response(content=pdf_bytes, media_type="application/pdf")
+    filename = build_pdf_filename("Resume", _candidate_name(session), job.title, job.company)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
 
 
 @router.get("/{job_id}/cover-letter.pdf")
@@ -150,7 +162,12 @@ def download_cover_letter_pdf(job_id: int, session: Session = Depends(get_sessio
     if job is None or job.tailored_cover_letter is None:
         raise HTTPException(status_code=404, detail="No cover letter for this job yet")
     pdf_bytes = render_cover_letter_pdf(job.tailored_cover_letter)
-    return Response(content=pdf_bytes, media_type="application/pdf")
+    filename = build_pdf_filename("CL", _candidate_name(session), job.title, job.company)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
 
 
 @router.post("/{job_id}/approve")

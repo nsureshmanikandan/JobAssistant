@@ -1,6 +1,8 @@
 import json
 import pytest
-from app.services.tailoring import tailor_job, TailoredContent, extract_candidate_name, build_cover_letter_header
+from app.services.tailoring import (
+    tailor_job, TailoredContent, extract_candidate_name, build_cover_letter_header, build_pdf_filename,
+)
 from app.llm.base import LLMResponse
 
 
@@ -48,3 +50,16 @@ def test_build_cover_letter_header_includes_all_fields():
     assert "Acme Corp" in header
     assert "Subject: Application for GenAI Architect Position" in header
     assert "Hiring Manager" in header
+
+
+def test_build_pdf_filename_sanitizes_and_joins_parts():
+    filename = build_pdf_filename(
+        "Resume", "Suresh Manikandan Natarajan", "Lead Agentic AI Engineer", "Trimble Inc."
+    )
+    assert filename == "Resume_Suresh_Manikandan_Natarajan_Lead_Agentic_AI_Engineer_Trimble_Inc.pdf"
+
+
+def test_build_pdf_filename_handles_commas_and_slashes():
+    filename = build_pdf_filename("CL", "Jane Doe", "Program Manager/Senior Member, GenAI", "D. E. Shaw")
+    assert filename == "CL_Jane_Doe_Program_Manager_Senior_Member_GenAI_D_E_Shaw.pdf"
+    assert "/" not in filename and "," not in filename

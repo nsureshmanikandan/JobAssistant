@@ -1,4 +1,5 @@
 import json
+import re
 from dataclasses import dataclass
 from datetime import date
 from app.llm.base import LLMProvider
@@ -36,6 +37,16 @@ def build_cover_letter_header(
         "\n"
         f"Subject: Application for {role_title} Position\n"
     )
+
+
+def _safe_filename_part(text: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9]+", "_", text).strip("_")
+    return cleaned or "Unknown"
+
+
+def build_pdf_filename(prefix: str, candidate_name: str, job_title: str, company: str) -> str:
+    parts = [prefix, candidate_name, job_title, company]
+    return "_".join(_safe_filename_part(p) for p in parts) + ".pdf"
 
 
 async def tailor_job(
