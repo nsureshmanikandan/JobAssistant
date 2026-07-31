@@ -1,6 +1,7 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlmodel import Session
 from app.config import settings
+from app.criteria import DEFAULT_CRITERIA
 from app.db.session import engine
 from app.db.models import ResumeVersion
 from app.llm.factory import get_llm_provider
@@ -25,18 +26,13 @@ async def scheduled_discovery_job() -> None:
         if master is None:
             logger.warning("scheduled_discovery_skipped", reason="no master resume configured")
             return
-        criteria = (
-            "Titles: AI Senior Technical Project Manager, GenAI Architect, Agentic AI Architect. "
-            "Location: Chennai, India, FTE only. Salary: INR 45L-60L. Industry: MNC only, "
-            "company size >= 5000 employees. Skip roles requiring visa/work sponsorship."
-        )
         await run_discovery(
             session,
             search_provider=get_search_provider(),
             llm=get_llm_provider(),
             queries=DEFAULT_QUERIES,
             resume=master.content,
-            criteria=criteria,
+            criteria=DEFAULT_CRITERIA,
         )
 
 

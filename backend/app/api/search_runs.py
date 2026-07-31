@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
+from app.criteria import DEFAULT_CRITERIA
 from app.db.session import get_session
 from app.db.models import SearchRun, ResumeVersion
 from app.llm.factory import get_llm_provider
@@ -18,17 +19,17 @@ def list_runs(session: Session = Depends(get_session)):
 @router.post("/run")
 async def trigger_run(session: Session = Depends(get_session)):
     master = session.exec(select(ResumeVersion).where(ResumeVersion.is_master.is_(True))).first()
-    criteria = (
-        "Titles: AI Senior Technical Project Manager, GenAI Architect, Agentic AI Architect. "
-        "Location: Chennai, India, FTE only. Salary: INR 45L-60L. Industry: MNC only, "
-        "company size >= 5000 employees. Skip roles requiring visa/work sponsorship."
-    )
+    if master is None:
+        raise HTTPException(status_code=400, detail="No master resume configured — add one in Settings first")
+
     run = await run_discovery(
         session,
         search_provider=get_search_provider(),
         llm=get_llm_provider(),
         queries=DEFAULT_QUERIES,
-        resume=master.content if master else "",
-        criteria=criteria,
+        resume=master.content,
+        criteria=DEFAULT_CRITERIA,
     )
+    if run.status == "failed":
+        raise HTTPException(status_code=502, detail=f"Search run failed: {run.error}")
     return run

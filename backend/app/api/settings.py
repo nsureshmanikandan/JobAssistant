@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlmodel import Session, select
 from app.db.session import get_session
 from app.db.models import ResumeVersion
 from app.config import settings
+from app.services.resume_parser import parse_resume_file
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
@@ -22,14 +23,32 @@ def get_master_resume(session: Session = Depends(get_session)):
     return session.exec(select(ResumeVersion).where(ResumeVersion.is_master.is_(True))).first()
 
 
-@router.put("/resume")
-def set_master_resume(payload: dict, session: Session = Depends(get_session)):
+def _save_master_resume(session: Session, label: str, content: str) -> ResumeVersion:
     existing = session.exec(select(ResumeVersion).where(ResumeVersion.is_master.is_(True))).first()
     if existing:
         existing.is_master = False
         session.add(existing)
-    resume = ResumeVersion(label=payload.get("label", "master"), content=payload["content"], is_master=True)
+    resume = ResumeVersion(label=label, content=content, is_master=True)
     session.add(resume)
     session.commit()
     session.refresh(resume)
     return resume
+
+
+@router.put("/resume")
+def set_master_resume(payload: dict, session: Session = Depends(get_session)):
+    return _save_master_resume(session, label=payload.get("label", "master"), content=payload["content"])
+
+
+@router.post("/resume/upload")
+async def upload_master_resume(session: Session = Depends(get_session), file: UploadFile = File(...)):
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No file provided")
+    file_bytes = await file.read()
+    try:
+        content = parse_resume_file(file.filename, file_bytes)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not content.strip():
+        raise HTTPException(status_code=400, detail="Could not extract any text from that file")
+    return _save_master_resume(session, label=file.filename, content=content)

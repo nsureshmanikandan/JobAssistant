@@ -1,13 +1,16 @@
 import time
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import Session, select
+from app.criteria import DEFAULT_CRITERIA
 from app.db.session import get_session
 from app.db.models import Job, ResumeVersion, Application
 from app.llm.factory import get_llm_provider
 from app.services.tailoring import tailor_job
+from app.services.scoring import score_job
 from app.services.export import render_resume_pdf, render_cover_letter_pdf
 from app.services.dedupe import job_dedupe_key
 from app.observability.llm_log import log_llm_call
+from app.observability.logging import logger
 from app.prompts.tailoring import TAILORING_PROMPT_ID
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -28,21 +31,41 @@ def get_job(job_id: int, session: Session = Depends(get_session)):
 
 
 @router.post("/manual")
-def create_manual_job(payload: dict, session: Session = Depends(get_session)):
+async def create_manual_job(payload: dict, session: Session = Depends(get_session)):
     key = job_dedupe_key(
         company=payload["company"], title=payload["title"], location=payload.get("location", "Chennai")
     )
+    description = payload.get("description") or None
     job = Job(
         title=payload["title"],
         company=payload["company"],
         location=payload.get("location", "Chennai"),
         source_url=payload["source_url"],
         source_site="manual",
-        description=payload.get("description") or None,
-        needs_manual_paste=not bool(payload.get("description")),
+        description=description,
+        needs_manual_paste=not bool(description),
         dedupe_key=key,
         status="pending_review",
     )
+
+    # Score immediately if we have a description and a master resume — otherwise
+    # manually-added jobs sit with match_percentage=None forever (only the daily
+    # discovery pipeline used to score jobs; manual paste-in skipped it entirely).
+    if description:
+        master = session.exec(select(ResumeVersion).where(ResumeVersion.is_master.is_(True))).first()
+        if master:
+            try:
+                score = await score_job(
+                    get_llm_provider(), resume=master.content, job_description=description, criteria=DEFAULT_CRITERIA
+                )
+                job.match_percentage = score.match_percentage
+                job.sponsorship_required = score.sponsorship_required
+                job.company_size_estimate = score.company_size_estimate
+                job.scoring_reasoning = score.reasoning
+            except ValueError as exc:
+                job.status = "scoring_failed"
+                logger.warning("manual_job_scoring_failed", title=job.title, error=str(exc))
+
     session.add(job)
     session.commit()
     session.refresh(job)
