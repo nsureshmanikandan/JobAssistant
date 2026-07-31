@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FileText, Mail, ExternalLink, Inbox } from "lucide-react";
+import { FileText, Mail, ExternalLink, Inbox, Download } from "lucide-react";
 import { api } from "../api/client";
 import type { Application } from "../types";
 
@@ -67,24 +67,44 @@ export default function Applications() {
 
             <div className="flex items-center gap-4 mt-4 pt-3 border-t border-slate-100 text-sm">
               {application.has_tailored_resume && (
-                <a
-                  className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 font-medium"
-                  href={api.resumePdfUrl(application.job_id)}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <FileText className="h-4 w-4" /> Resume PDF
-                </a>
+                <span className="inline-flex items-center gap-1">
+                  <a
+                    className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 font-medium"
+                    href={api.resumePdfUrl(application.job_id)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <FileText className="h-4 w-4" /> Resume PDF
+                  </a>
+                  <a
+                    className="text-slate-400 hover:text-indigo-600 p-1"
+                    href={api.resumePdfDownloadUrl(application.job_id)}
+                    aria-label="Download Resume PDF"
+                    title="Download"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </a>
+                </span>
               )}
               {application.has_tailored_cover_letter && (
-                <a
-                  className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 font-medium"
-                  href={api.coverLetterPdfUrl(application.job_id)}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Mail className="h-4 w-4" /> Cover Letter PDF
-                </a>
+                <span className="inline-flex items-center gap-1">
+                  <a
+                    className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 font-medium"
+                    href={api.coverLetterPdfUrl(application.job_id)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Mail className="h-4 w-4" /> Cover Letter PDF
+                  </a>
+                  <a
+                    className="text-slate-400 hover:text-indigo-600 p-1"
+                    href={api.coverLetterPdfDownloadUrl(application.job_id)}
+                    aria-label="Download Cover Letter PDF"
+                    title="Download"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </a>
+                </span>
               )}
               {application.job_source_url && (
                 <a

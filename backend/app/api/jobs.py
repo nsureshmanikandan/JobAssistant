@@ -143,30 +143,37 @@ def _candidate_name(session: Session) -> str:
 
 
 @router.get("/{job_id}/resume.pdf")
-def download_resume_pdf(job_id: int, session: Session = Depends(get_session)):
+def download_resume_pdf(job_id: int, download: bool = False, session: Session = Depends(get_session)):
     job = session.get(Job, job_id)
     if job is None or job.tailored_resume is None:
         raise HTTPException(status_code=404, detail="No tailored resume for this job yet")
     pdf_bytes = render_resume_pdf(job.tailored_resume)
     filename = build_pdf_filename("Resume", _candidate_name(session), job.title, job.company)
+    # "attachment" forces an actual file-save with no on-screen preview;
+    # "inline" opens it in the browser's own PDF viewer instead. The frontend
+    # and backend are different origins here, so the client-side `download`
+    # attribute on an <a> tag is ignored by the browser — this has to be
+    # controlled server-side via ?download=true instead.
+    disposition = "attachment" if download else "inline"
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+        headers={"Content-Disposition": f'{disposition}; filename="{filename}"'},
     )
 
 
 @router.get("/{job_id}/cover-letter.pdf")
-def download_cover_letter_pdf(job_id: int, session: Session = Depends(get_session)):
+def download_cover_letter_pdf(job_id: int, download: bool = False, session: Session = Depends(get_session)):
     job = session.get(Job, job_id)
     if job is None or job.tailored_cover_letter is None:
         raise HTTPException(status_code=404, detail="No cover letter for this job yet")
     pdf_bytes = render_cover_letter_pdf(job.tailored_cover_letter)
     filename = build_pdf_filename("CL", _candidate_name(session), job.title, job.company)
+    disposition = "attachment" if download else "inline"
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+        headers={"Content-Disposition": f'{disposition}; filename="{filename}"'},
     )
 
 

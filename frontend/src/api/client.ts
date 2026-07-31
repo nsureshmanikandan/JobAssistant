@@ -22,8 +22,14 @@ export const api = {
   tailorJob: (id: number) => request<Job>(`/jobs/${id}/tailor`, { method: "POST" }),
   approveJob: (id: number) => request<Job>(`/jobs/${id}/approve`, { method: "POST" }),
   rejectJob: (id: number) => request<Job>(`/jobs/${id}/reject`, { method: "POST" }),
+  // "View" opens inline in a new tab (browser's own PDF viewer); "Download"
+  // forces an actual file-save with no preview. Frontend/backend are
+  // different origins, so this has to be a server-side Content-Disposition
+  // switch (?download=true), not a client-side <a download> attribute.
   resumePdfUrl: (id: number) => `${BASE_URL}/jobs/${id}/resume.pdf`,
+  resumePdfDownloadUrl: (id: number) => `${BASE_URL}/jobs/${id}/resume.pdf?download=true`,
   coverLetterPdfUrl: (id: number) => `${BASE_URL}/jobs/${id}/cover-letter.pdf`,
+  coverLetterPdfDownloadUrl: (id: number) => `${BASE_URL}/jobs/${id}/cover-letter.pdf?download=true`,
   listApplications: () => request<Application[]>("/applications"),
   updateApplicationStatus: (id: number, status: string) =>
     request<Application>(`/applications/${id}/status`, { method: "PUT", body: JSON.stringify({ status }) }),

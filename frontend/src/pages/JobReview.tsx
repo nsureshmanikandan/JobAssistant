@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   Sparkles, Download, CheckCircle2, XCircle, ExternalLink, Building2, MapPin, RotateCw, ArrowLeft,
+  FileText, Mail,
 } from "lucide-react";
 import { api } from "../api/client";
 import type { Job } from "../types";
@@ -111,14 +112,22 @@ export default function JobReview() {
               value={job.tailored_resume}
               onChange={(e) => setJob({ ...job, tailored_resume: e.target.value })}
             />
-            <a
-              className="inline-flex items-center gap-1.5 mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer"
-              href={api.resumePdfUrl(jobId)}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Download className="h-4 w-4" /> Download Resume PDF
-            </a>
+            <div className="flex items-center gap-4 mt-3">
+              <a
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer"
+                href={api.resumePdfUrl(jobId)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <FileText className="h-4 w-4" /> View Resume PDF
+              </a>
+              <a
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-indigo-600 cursor-pointer"
+                href={api.resumePdfDownloadUrl(jobId)}
+              >
+                <Download className="h-4 w-4" /> Download
+              </a>
+            </div>
           </section>
 
           <section className="bg-white border border-slate-200 rounded-xl p-5">
@@ -128,14 +137,22 @@ export default function JobReview() {
               value={job.tailored_cover_letter ?? ""}
               onChange={(e) => setJob({ ...job, tailored_cover_letter: e.target.value })}
             />
-            <a
-              className="inline-flex items-center gap-1.5 mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer"
-              href={api.coverLetterPdfUrl(jobId)}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Download className="h-4 w-4" /> Download Cover Letter PDF
-            </a>
+            <div className="flex items-center gap-4 mt-3">
+              <a
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer"
+                href={api.coverLetterPdfUrl(jobId)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Mail className="h-4 w-4" /> View Cover Letter PDF
+              </a>
+              <a
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-indigo-600 cursor-pointer"
+                href={api.coverLetterPdfDownloadUrl(jobId)}
+              >
+                <Download className="h-4 w-4" /> Download
+              </a>
+            </div>
           </section>
 
           <div className="flex items-center gap-3">

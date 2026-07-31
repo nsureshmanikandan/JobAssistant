@@ -11,7 +11,9 @@ vi.mock("../../api/client", () => ({
     approveJob: vi.fn(),
     rejectJob: vi.fn(),
     resumePdfUrl: (id: number) => `http://localhost:8000/jobs/${id}/resume.pdf`,
+    resumePdfDownloadUrl: (id: number) => `http://localhost:8000/jobs/${id}/resume.pdf?download=true`,
     coverLetterPdfUrl: (id: number) => `http://localhost:8000/jobs/${id}/cover-letter.pdf`,
+    coverLetterPdfDownloadUrl: (id: number) => `http://localhost:8000/jobs/${id}/cover-letter.pdf?download=true`,
   },
 }));
 
@@ -29,7 +31,7 @@ const baseJob = {
 };
 
 describe("JobReview", () => {
-  it("generates tailored materials and shows download links once available", async () => {
+  it("generates tailored materials and shows view/download links once available", async () => {
     (api.getJob as any).mockResolvedValue(baseJob);
     (api.tailorJob as any).mockResolvedValue({
       ...baseJob,
@@ -48,7 +50,8 @@ describe("JobReview", () => {
     await waitFor(() => expect(screen.getByText("GenAI Architect")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: /generate tailored resume/i }));
 
-    await waitFor(() => expect(screen.getByText(/download resume pdf/i)).toBeInTheDocument());
-    expect(screen.getByText(/download cover letter pdf/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/view resume pdf/i)).toBeInTheDocument());
+    expect(screen.getByText(/view cover letter pdf/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/^download$/i)).toHaveLength(2);
   });
 });
