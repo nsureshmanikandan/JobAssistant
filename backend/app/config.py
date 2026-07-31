@@ -1,8 +1,15 @@
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Resolves to the project root .env (two levels above backend/app/) so Settings()
+# loads correctly whether run from backend/, the project root, or inside Docker
+# (where env vars come from `env_file` in docker-compose.yml instead, and this
+# path simply won't exist — pydantic-settings tolerates a missing env_file).
+_PROJECT_ROOT_ENV = Path(__file__).resolve().parent.parent.parent / ".env"
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_PROJECT_ROOT_ENV, extra="ignore")
 
     llm_provider: str = "azure_openai"
     azure_openai_endpoint: str = ""
