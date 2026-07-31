@@ -27,6 +27,32 @@ export interface Application {
   applied_at: string | null;
   notes: string | null;
   created_at: string;
+  job_title: string | null;
+  job_company: string | null;
+  job_source_url: string | null;
+  has_tailored_resume: boolean;
+  has_tailored_cover_letter: boolean;
+}
+
+export interface ResumeVersion {
+  id: number;
+  label: string;
+  content: string;
+  is_master: boolean;
+  created_at: string;
+}
+
+export interface SearchCriteria {
+  id: number;
+  titles: string;
+  location: string;
+  fte_only: boolean;
+  salary_min_lakhs: number;
+  salary_max_lakhs: number;
+  industry: string;
+  min_company_size: number;
+  exclude_sponsorship: boolean;
+  updated_at: string;
 }
 
 export interface LLMCallLogEntry {

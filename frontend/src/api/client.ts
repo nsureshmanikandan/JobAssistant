@@ -1,4 +1,4 @@
-import type { Job, Application, LLMCallLogEntry } from "../types";
+import type { Job, Application, LLMCallLogEntry, ResumeVersion, SearchCriteria } from "../types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
@@ -8,7 +8,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     ...options,
   });
   if (!response.ok) {
-    throw new Error(`Request to ${path} failed: ${response.status}`);
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail || `Request to ${path} failed: ${response.status}`);
   }
   return response.json();
 }
@@ -26,6 +27,33 @@ export const api = {
   listApplications: () => request<Application[]>("/applications"),
   updateApplicationStatus: (id: number, status: string) =>
     request<Application>(`/applications/${id}/status`, { method: "PUT", body: JSON.stringify({ status }) }),
-  runSearchNow: () => request<unknown>("/search/run", { method: "POST" }),
+  runSearchNow: (freshnessHours: number = 24) =>
+    request<{ status: string; jobs_found: number; jobs_new: number; error: string | null }>(
+      `/search/run?freshness_hours=${freshnessHours}`,
+      { method: "POST" }
+    ),
   listLlmCalls: () => request<LLMCallLogEntry[]>("/observability/llm-calls"),
+  getSettings: () =>
+    request<{ llm_provider: string; search_provider: string; match_threshold: number; scheduler_hour: number }>(
+      "/settings"
+    ),
+  getMasterResume: () => request<ResumeVersion | null>("/settings/resume"),
+  saveMasterResume: (content: string) =>
+    request<ResumeVersion>("/settings/resume", {
+      method: "PUT",
+      body: JSON.stringify({ label: "master", content }),
+    }),
+  getCriteria: () => request<SearchCriteria>("/settings/criteria"),
+  saveCriteria: (payload: Partial<SearchCriteria>) =>
+    request<SearchCriteria>("/settings/criteria", { method: "PUT", body: JSON.stringify(payload) }),
+  uploadMasterResume: async (file: File): Promise<ResumeVersion> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch(`${BASE_URL}/settings/resume/upload`, { method: "POST", body: formData });
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new Error(body?.detail || `Upload failed: ${response.status}`);
+    }
+    return response.json();
+  },
 };
