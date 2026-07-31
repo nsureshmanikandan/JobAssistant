@@ -2008,13 +2008,12 @@ git commit -m "feat(backend): wire FastAPI app with jobs, search, applications, 
 
 - [ ] **Step 1: Write Dockerfile**
 
+No GTK/Pango system packages needed here — Task 9 switched PDF export from WeasyPrint to
+ReportLab specifically to avoid native dependencies, so this image stays a plain slim Python
+build.
+
 ```dockerfile
 FROM python:3.11-slim
-
-RUN apt-get update && apt-get install -y \
-    libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev \
-    shared-mime-info fonts-liberation \
-    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY requirements.txt .
@@ -2030,7 +2029,7 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 ```bash
 git add backend/Dockerfile
-git commit -m "feat(backend): add Dockerfile (WeasyPrint system deps included)"
+git commit -m "feat(backend): add Dockerfile"
 ```
 
 ---
