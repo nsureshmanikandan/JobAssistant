@@ -49,10 +49,12 @@ Monorepo at `C:\Users\n.sureshmanikandan\Repo1\JobAssistant`:
 - **`core/tailoring.py`** — generates tailored resume bullets + cover letter. Runs **on-demand**
   only when the user opens a job for review (not for every discovered job), to control LLM cost.
   Explicit "Regenerate" action re-runs it; opening the same job again does not.
-- **`core/export.py`** — renders the tailored resume and cover letter to **PDF** (via
-  WeasyPrint/HTML-to-PDF, ATS-safe single-column layout — no tables/text-boxes/columns that
-  break ATS parsers). This is required for Phase 1, not deferred: the user needs an actual file
-  to attach when submitting on the job site, not just on-screen text.
+- **`core/export.py`** — renders the tailored resume and cover letter to **PDF** via ReportLab
+  (pure-Python, no native system libraries required — WeasyPrint was considered but needs GTK/
+  Pango installed at the OS level, which fails on a plain Windows dev machine), ATS-safe
+  single-column layout — no tables/text-boxes/columns that break ATS parsers. This is required
+  for Phase 1, not deferred: the user needs an actual file to attach when submitting on the job
+  site, not just on-screen text.
 - **`core/scheduler.py`** — APScheduler daily job (default 07:00 local) runs discovery across
   target titles, dedupes against history (idempotent — a second run same day only processes new
   postings), fetches, scores, stores results. Manual "Run search now" button available too.
