@@ -1,21 +1,13 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlmodel import Session
 from app.config import settings
-from app.criteria import DEFAULT_CRITERIA
+from app.criteria import build_criteria_text, build_queries, get_or_create_criteria, primary_location
 from app.db.session import engine
 from app.db.models import ResumeVersion
 from app.llm.factory import get_llm_provider
 from app.search.factory import get_search_provider
 from app.services.discovery import run_discovery
 from app.observability.logging import logger
-
-DEFAULT_QUERIES = [
-    'site:linkedin.com/jobs "AI Senior Technical Project Manager" Chennai',
-    'site:linkedin.com/jobs "GenAI Architect" Chennai',
-    'site:linkedin.com/jobs "Agentic AI Architect" Chennai',
-    'site:naukri.com "GenAI Architect" Chennai',
-    'site:indeed.com "Agentic AI Architect" Chennai',
-]
 
 _scheduler: AsyncIOScheduler | None = None
 
@@ -26,13 +18,16 @@ async def scheduled_discovery_job() -> None:
         if master is None:
             logger.warning("scheduled_discovery_skipped", reason="no master resume configured")
             return
+        criteria = get_or_create_criteria(session)
         await run_discovery(
             session,
             search_provider=get_search_provider(),
             llm=get_llm_provider(),
-            queries=DEFAULT_QUERIES,
+            queries=build_queries(criteria),
             resume=master.content,
-            criteria=DEFAULT_CRITERIA,
+            criteria=build_criteria_text(criteria),
+            freshness_hours=24,
+            default_location=primary_location(criteria),
         )
 
 

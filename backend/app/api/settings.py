@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlmodel import Session, select
+from app.criteria import get_or_create_criteria
 from app.db.session import get_session
 from app.db.models import ResumeVersion
 from app.config import settings
@@ -52,3 +53,23 @@ async def upload_master_resume(session: Session = Depends(get_session), file: Up
     if not content.strip():
         raise HTTPException(status_code=400, detail="Could not extract any text from that file")
     return _save_master_resume(session, label=file.filename, content=content)
+
+
+@router.get("/criteria")
+def get_criteria(session: Session = Depends(get_session)):
+    return get_or_create_criteria(session)
+
+
+@router.put("/criteria")
+def set_criteria(payload: dict, session: Session = Depends(get_session)):
+    criteria = get_or_create_criteria(session)
+    for field in (
+        "titles", "location", "fte_only", "salary_min_lakhs", "salary_max_lakhs",
+        "industry", "min_company_size", "exclude_sponsorship",
+    ):
+        if field in payload:
+            setattr(criteria, field, payload[field])
+    session.add(criteria)
+    session.commit()
+    session.refresh(criteria)
+    return criteria

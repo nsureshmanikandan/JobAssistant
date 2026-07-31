@@ -11,7 +11,12 @@ class AzureBingSearchProvider(SearchProvider):
         self._endpoint = (endpoint or settings.azure_bing_search_endpoint).rstrip("/")
 
     async def search(self, query: str, freshness_hours: int = 24) -> list[SearchResult]:
-        freshness = "Day" if freshness_hours <= 24 else "Week"
+        if not self._api_key or not self._endpoint:
+            raise ValueError(
+                "Azure Bing Search is not configured — set AZURE_BING_SEARCH_KEY and "
+                "AZURE_BING_SEARCH_ENDPOINT in .env, or switch SEARCH_PROVIDER to google_custom."
+            )
+        freshness = "Day" if freshness_hours <= 24 else "Week" if freshness_hours <= 168 else "Month"
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.get(
                 f"{self._endpoint}/v7.0/search",

@@ -58,6 +58,21 @@ class SearchRun(SQLModel, table=True):
     error: Optional[str] = None
 
 
+class SearchCriteria(SQLModel, table=True):
+    # Single-row table (id always 1) — editable via Settings, replacing what
+    # used to be a hardcoded string duplicated across three backend files.
+    id: Optional[int] = Field(default=None, primary_key=True)
+    titles: str = "AI Senior Technical Project Manager,GenAI Architect,Agentic AI Architect"  # comma-separated
+    location: str = "Chennai"
+    fte_only: bool = True
+    salary_min_lakhs: int = 45
+    salary_max_lakhs: int = 60
+    industry: str = "MNC"
+    min_company_size: int = 5000
+    exclude_sponsorship: bool = True
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
 class LLMCallLog(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     provider: str

@@ -1,7 +1,7 @@
 import time
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import Session, select
-from app.criteria import DEFAULT_CRITERIA
+from app.criteria import build_criteria_text, get_or_create_criteria
 from app.db.session import get_session
 from app.db.models import Job, ResumeVersion, Application
 from app.llm.factory import get_llm_provider
@@ -55,8 +55,9 @@ async def create_manual_job(payload: dict, session: Session = Depends(get_sessio
         master = session.exec(select(ResumeVersion).where(ResumeVersion.is_master.is_(True))).first()
         if master:
             try:
+                criteria_text = build_criteria_text(get_or_create_criteria(session))
                 score = await score_job(
-                    get_llm_provider(), resume=master.content, job_description=description, criteria=DEFAULT_CRITERIA
+                    get_llm_provider(), resume=master.content, job_description=description, criteria=criteria_text
                 )
                 job.match_percentage = score.match_percentage
                 job.sponsorship_required = score.sponsorship_required

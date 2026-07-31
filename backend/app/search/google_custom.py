@@ -13,7 +13,13 @@ class GoogleCustomSearchProvider(SearchProvider):
         self._cx = cx or settings.google_custom_search_cx
 
     async def search(self, query: str, freshness_hours: int = 24) -> list[SearchResult]:
-        date_restrict = "d1" if freshness_hours <= 24 else "w1"
+        if not self._api_key or not self._cx:
+            raise ValueError(
+                "Google Custom Search is not configured — set GOOGLE_CUSTOM_SEARCH_API_KEY and "
+                "GOOGLE_CUSTOM_SEARCH_CX in .env, or switch SEARCH_PROVIDER to azure_bing."
+            )
+        days = max(1, -(-freshness_hours // 24))  # ceil division: 48h -> 2, 72h -> 3, 168h -> 7
+        date_restrict = f"d{days}"
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.get(
                 _ENDPOINT,

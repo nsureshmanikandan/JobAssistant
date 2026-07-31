@@ -24,6 +24,8 @@ async def run_discovery(
     queries: list[str],
     resume: str,
     criteria: str,
+    freshness_hours: int = 24,
+    default_location: str = "Chennai",
 ) -> SearchRun:
     run = SearchRun(status="running")
     session.add(run)
@@ -34,11 +36,14 @@ async def run_discovery(
     jobs_new = 0
     try:
         for query in queries:
-            results = await search_provider.search(query)
+            results = await search_provider.search(query, freshness_hours=freshness_hours)
             jobs_found += len(results)
             for result in results:
                 title, company = _parse_title_company(result.title)
-                key = job_dedupe_key(company=company, title=title, location="Chennai")
+                # default_location is an approximation, not a per-result attribution:
+                # search providers don't return structured location metadata, so when
+                # criteria spans multiple locations we can't tell which one matched.
+                key = job_dedupe_key(company=company, title=title, location=default_location)
                 existing = session.exec(select(Job).where(Job.dedupe_key == key)).first()
                 if existing:
                     continue
@@ -47,7 +52,7 @@ async def run_discovery(
                 job = Job(
                     title=title,
                     company=company,
-                    location="Chennai",
+                    location=default_location,
                     source_url=result.url,
                     source_site=search_provider.name,
                     description=fetch_result.description,
