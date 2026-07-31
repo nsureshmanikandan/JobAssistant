@@ -9,8 +9,10 @@ class GoogleCustomSearchProvider(SearchProvider):
     name = "google_custom"
 
     def __init__(self, api_key: str | None = None, cx: str | None = None) -> None:
-        self._api_key = api_key or settings.google_custom_search_api_key
-        self._cx = cx or settings.google_custom_search_cx
+        # `is not None` (not `or`) so tests can pass "" to force the unconfigured
+        # path even when real .env settings are non-empty.
+        self._api_key = api_key if api_key is not None else settings.google_custom_search_api_key
+        self._cx = cx if cx is not None else settings.google_custom_search_cx
 
     async def search(self, query: str, freshness_hours: int = 24) -> list[SearchResult]:
         if not self._api_key or not self._cx:

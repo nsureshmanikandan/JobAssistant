@@ -17,7 +17,7 @@ const NAV_ITEMS = [
 
 export default function App() {
   return (
-    <div className="min-h-dvh flex bg-violet-50">
+    <div className="h-dvh flex bg-violet-50 overflow-hidden">
       <aside className="w-64 shrink-0 bg-indigo-950 text-indigo-100 flex flex-col">
         <div className="flex items-center gap-2 px-6 py-5 border-b border-white/10">
           <div className="h-8 w-8 rounded-lg bg-indigo-500 flex items-center justify-center">
@@ -44,13 +44,10 @@ export default function App() {
             </NavLink>
           ))}
         </nav>
-        <div className="px-6 py-4 border-t border-white/10 text-xs text-indigo-300">
-          Chennai · GenAI / Agentic AI roles
-        </div>
       </aside>
 
       <main className="flex-1 min-w-0 overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-8 py-8">
+        <div className="max-w-5xl mx-auto px-8 py-8 min-h-0">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/jobs/:id" element={<JobReview />} />

@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     azure_bing_search_endpoint: str = ""
     google_custom_search_api_key: str = ""
     google_custom_search_cx: str = ""
+    apify_api_token: str = ""
+    apify_actor_id: str = ""
 
     database_url: str = "sqlite:///./data/jobassistant.db"
     scheduler_hour: int = 7

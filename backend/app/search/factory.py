@@ -12,4 +12,7 @@ def get_search_provider() -> SearchProvider:
     if provider == "google_custom":
         from app.search.google_custom import GoogleCustomSearchProvider
         return GoogleCustomSearchProvider()
+    if provider == "apify":
+        from app.search.apify import ApifyJobsProvider
+        return ApifyJobsProvider()
     raise ValueError(f"Unknown SEARCH_PROVIDER: {provider}")

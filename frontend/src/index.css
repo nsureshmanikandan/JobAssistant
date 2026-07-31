@@ -8,6 +8,26 @@ body {
   font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Windows Chrome reserves a full-width classic scrollbar track on any
+   overflow-y-auto element even when content doesn't overflow (unlike macOS's
+   overlay scrollbars). Thinning it keeps the layout from looking like it has
+   a stray scrollbar when the content actually fits. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(199 210 254) transparent; /* indigo-200 thumb, transparent track */
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgb(199 210 254);
+  border-radius: 9999px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

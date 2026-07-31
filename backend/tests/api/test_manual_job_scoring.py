@@ -57,6 +57,12 @@ def test_manual_job_with_description_gets_scored(client_with_master_resume, monk
     assert body["match_percentage"] == 88
     assert body["sponsorship_required"] is False
 
+    # Scoring calls must show up in the Observability log, same as tailoring calls.
+    llm_calls = client_with_master_resume.get("/observability/llm-calls").json()
+    assert len(llm_calls) == 1
+    assert llm_calls[0]["prompt_id"] == "scoring-v1"
+    assert llm_calls[0]["success"] is True
+
 
 def test_manual_job_without_description_stays_unscored(client_with_master_resume):
     response = client_with_master_resume.post(

@@ -7,8 +7,11 @@ class AzureBingSearchProvider(SearchProvider):
     name = "azure_bing"
 
     def __init__(self, api_key: str | None = None, endpoint: str | None = None) -> None:
-        self._api_key = api_key or settings.azure_bing_search_key
-        self._endpoint = (endpoint or settings.azure_bing_search_endpoint).rstrip("/")
+        # `is not None` (not `or`) so tests can pass "" to force the unconfigured
+        # path even when real .env settings are non-empty.
+        self._api_key = api_key if api_key is not None else settings.azure_bing_search_key
+        resolved_endpoint = endpoint if endpoint is not None else settings.azure_bing_search_endpoint
+        self._endpoint = resolved_endpoint.rstrip("/")
 
     async def search(self, query: str, freshness_hours: int = 24) -> list[SearchResult]:
         if not self._api_key or not self._endpoint:

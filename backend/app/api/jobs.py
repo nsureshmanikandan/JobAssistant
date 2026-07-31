@@ -12,6 +12,7 @@ from app.services.dedupe import job_dedupe_key
 from app.observability.llm_log import log_llm_call
 from app.observability.logging import logger
 from app.prompts.tailoring import TAILORING_PROMPT_ID
+from app.prompts.scoring import SCORING_PROMPT_ID
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -54,18 +55,30 @@ async def create_manual_job(payload: dict, session: Session = Depends(get_sessio
     if description:
         master = session.exec(select(ResumeVersion).where(ResumeVersion.is_master.is_(True))).first()
         if master:
+            llm = get_llm_provider()
+            score_start = time.monotonic()
             try:
                 criteria_text = build_criteria_text(get_or_create_criteria(session))
                 score = await score_job(
-                    get_llm_provider(), resume=master.content, job_description=description, criteria=criteria_text
+                    llm, resume=master.content, job_description=description, criteria=criteria_text
                 )
                 job.match_percentage = score.match_percentage
                 job.sponsorship_required = score.sponsorship_required
                 job.company_size_estimate = score.company_size_estimate
                 job.scoring_reasoning = score.reasoning
+                log_llm_call(
+                    session, provider=llm.name, model=getattr(llm, "_deployment", llm.name),
+                    prompt_id=SCORING_PROMPT_ID, job_id=None, tokens_in=0, tokens_out=0,
+                    latency_ms=int((time.monotonic() - score_start) * 1000), success=True,
+                )
             except ValueError as exc:
                 job.status = "scoring_failed"
                 logger.warning("manual_job_scoring_failed", title=job.title, error=str(exc))
+                log_llm_call(
+                    session, provider=llm.name, model=getattr(llm, "_deployment", llm.name),
+                    prompt_id=SCORING_PROMPT_ID, job_id=None, tokens_in=0, tokens_out=0,
+                    latency_ms=int((time.monotonic() - score_start) * 1000), success=False, error=str(exc),
+                )
 
     session.add(job)
     session.commit()

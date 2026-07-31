@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { RefreshCw, AlertTriangle, CheckCircle2, MapPin, Building2, Inbox } from "lucide-react";
+import {
+  RefreshCw, AlertTriangle, CheckCircle2, MapPin, Building2, Inbox, ChevronLeft, ChevronRight,
+} from "lucide-react";
 import { api } from "../api/client";
 import type { Job } from "../types";
+
+const PAGE_SIZE = 10;
 
 type SearchBanner = { kind: "success" | "error"; message: string } | null;
 
@@ -41,6 +45,7 @@ export default function Dashboard() {
   const [searching, setSearching] = useState(false);
   const [banner, setBanner] = useState<SearchBanner>(null);
   const [freshnessHours, setFreshnessHours] = useState(24);
+  const [page, setPage] = useState(0);
 
   const loadJobs = () => api.listJobs().then(setJobs);
 
@@ -64,6 +69,7 @@ export default function Dashboard() {
           message: `Search complete — found ${run.jobs_found} posting(s), ${run.jobs_new} new.`,
         });
       }
+      setPage(0);
       await loadJobs();
     } catch (err) {
       setBanner({ kind: "error", message: err instanceof Error ? err.message : "Search run failed." });
@@ -83,7 +89,15 @@ export default function Dashboard() {
     );
   }
 
-  const pending = jobs.filter((j) => j.status === "pending_review" || j.status === "scoring_failed");
+  // Highest match first; unscored/failed jobs (null score) sort to the bottom.
+  const pending = jobs
+    .filter((j) => j.status === "pending_review" || j.status === "scoring_failed")
+    .sort((a, b) => (b.match_percentage ?? -1) - (a.match_percentage ?? -1));
+
+  const pageCount = Math.max(1, Math.ceil(pending.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount - 1);
+  const pageStart = currentPage * PAGE_SIZE;
+  const pageItems = pending.slice(pageStart, pageStart + PAGE_SIZE);
 
   return (
     <div className="space-y-5">
@@ -130,46 +144,70 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="grid gap-3">
-        {pending.map((job) => (
-          <Link
-            key={job.id}
-            to={`/jobs/${job.id}`}
-            className="group block bg-white border border-slate-200 rounded-xl p-5 hover:border-indigo-300 hover:shadow-md transition-all duration-150"
-          >
-            <div className="flex justify-between items-start gap-4">
-              <div className="min-w-0">
-                <p className="font-semibold text-indigo-950 group-hover:text-indigo-600 transition-colors">
-                  {job.title}
-                </p>
-                <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
-                  <span className="inline-flex items-center gap-1"><Building2 className="h-3.5 w-3.5" />{job.company}</span>
-                  <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{job.location}</span>
-                </div>
-              </div>
-              <div className="text-right shrink-0 space-y-1">
-                <MatchBadge job={job} />
-                {job.needs_manual_paste && (
-                  <p className="text-xs text-amber-600 flex items-center gap-1 justify-end">
-                    <AlertTriangle className="h-3 w-3" /> Needs description pasted in
-                  </p>
-                )}
-              </div>
-            </div>
-          </Link>
-        ))}
-        {pending.length === 0 && (
-          <div className="flex flex-col items-center text-center gap-3 bg-white border border-dashed border-slate-300 rounded-xl py-14">
-            <div className="h-12 w-12 rounded-full bg-indigo-50 flex items-center justify-center">
-              <Inbox className="h-6 w-6 text-indigo-400" />
-            </div>
-            <div>
-              <p className="font-medium text-indigo-950">No pending matches yet</p>
-              <p className="text-sm text-slate-500 mt-1">Run a search or add a job manually to get started.</p>
-            </div>
+      {pending.length === 0 ? (
+        <div className="flex flex-col items-center text-center gap-3 bg-white border border-dashed border-slate-300 rounded-xl py-14">
+          <div className="h-12 w-12 rounded-full bg-indigo-50 flex items-center justify-center">
+            <Inbox className="h-6 w-6 text-indigo-400" />
           </div>
-        )}
-      </div>
+          <div>
+            <p className="font-medium text-indigo-950">No pending matches yet</p>
+            <p className="text-sm text-slate-500 mt-1">Run a search or add a job manually to get started.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden">
+          {pageItems.map((job) => (
+            <Link
+              key={job.id}
+              to={`/jobs/${job.id}`}
+              className="group flex items-center gap-3 px-4 py-2.5 hover:bg-indigo-50/50 transition-colors duration-150"
+            >
+              <p className="font-medium text-indigo-950 group-hover:text-indigo-600 transition-colors truncate flex-1 min-w-0">
+                {job.title}
+              </p>
+              <span className="hidden sm:inline-flex items-center gap-1 text-sm text-slate-500 shrink-0 w-40 truncate">
+                <Building2 className="h-3.5 w-3.5 shrink-0" />{job.company}
+              </span>
+              <span className="hidden md:inline-flex items-center gap-1 text-sm text-slate-500 shrink-0 w-28 truncate">
+                <MapPin className="h-3.5 w-3.5 shrink-0" />{job.location}
+              </span>
+              {job.needs_manual_paste && (
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" aria-label="Needs description pasted in" />
+              )}
+              <div className="shrink-0">
+                <MatchBadge job={job} />
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {pending.length > PAGE_SIZE && (
+        <div className="flex items-center justify-between pt-1">
+          <p className="text-sm text-slate-500">
+            Showing {pageStart + 1}-{Math.min(pageStart + PAGE_SIZE, pending.length)} of {pending.length}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              className="inline-flex items-center gap-1 border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={currentPage === 0}
+            >
+              <ChevronLeft className="h-4 w-4" /> Previous
+            </button>
+            <span className="text-sm text-slate-500 px-1">
+              Page {currentPage + 1} of {pageCount}
+            </span>
+            <button
+              className="inline-flex items-center gap-1 border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+              disabled={currentPage >= pageCount - 1}
+            >
+              Next <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

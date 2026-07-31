@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
-  Sparkles, Download, CheckCircle2, XCircle, ExternalLink, Building2, MapPin, RotateCw,
+  Sparkles, Download, CheckCircle2, XCircle, ExternalLink, Building2, MapPin, RotateCw, ArrowLeft,
 } from "lucide-react";
 import { api } from "../api/client";
 import type { Job } from "../types";
@@ -45,6 +45,13 @@ export default function JobReview() {
 
   return (
     <div className="space-y-6 pb-10">
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-indigo-600 transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+      </Link>
+
       <div>
         <h1 className="text-2xl font-bold text-indigo-950 tracking-tight">{job.title}</h1>
         <div className="flex items-center gap-3 mt-1.5 text-sm text-slate-500">
@@ -60,9 +67,9 @@ export default function JobReview() {
 
       <section className="bg-white border border-slate-200 rounded-xl p-5">
         <h2 className="font-semibold text-indigo-950 mb-2">Job Description</h2>
-        <pre className="whitespace-pre-wrap font-sans text-sm text-slate-700 leading-relaxed">
+        <div className="whitespace-pre-wrap text-sm text-slate-700 leading-relaxed">
           {job.description}
-        </pre>
+        </div>
       </section>
 
       {error && (
