@@ -108,6 +108,12 @@ link."
   committed. `.gitignore` excludes `.env`, `*.db`, `__pycache__/`, `node_modules/`.
 - `.env.example` documents required variable names with no real values.
 - Cloud phase (2) moves these into Azure Key Vault references instead of plain env vars.
+- All backend env vars use a `JOBASSISTANT_` prefix (`env_prefix` in `Settings`). This isn't
+  cosmetic: pydantic-settings gives real OS environment variables priority over `.env` file
+  values, and this machine runs other projects (e.g. AgentForge) that set generically-named
+  User-level env vars like `AZURE_OPENAI_ENDPOINT` — those silently override an unprefixed
+  `.env` and point this app at the wrong Azure resource. Hit exactly that collision live during
+  Phase 1 verification; the prefix makes it structurally impossible to recur.
 
 ## Testing
 

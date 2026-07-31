@@ -1,6 +1,6 @@
 import type { Job, Application, LLMCallLogEntry } from "../types";
 
-const BASE_URL = "http://localhost:8000";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`, {

@@ -15,9 +15,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Job Application Assistant", lifespan=lifespan)
 
+# Regex (not a fixed port list) because this is a single-user local tool and the
+# frontend dev port varies (5173 by default, but shifts to avoid clashing with
+# other local projects' dev servers).
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origin_regex=r"http://localhost:\d+",
     allow_methods=["*"],
     allow_headers=["*"],
 )
