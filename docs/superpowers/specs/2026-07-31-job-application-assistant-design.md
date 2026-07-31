@@ -49,6 +49,10 @@ Monorepo at `C:\Users\n.sureshmanikandan\Repo1\JobAssistant`:
 - **`core/tailoring.py`** — generates tailored resume bullets + cover letter. Runs **on-demand**
   only when the user opens a job for review (not for every discovered job), to control LLM cost.
   Explicit "Regenerate" action re-runs it; opening the same job again does not.
+- **`core/export.py`** — renders the tailored resume and cover letter to **PDF** (via
+  WeasyPrint/HTML-to-PDF, ATS-safe single-column layout — no tables/text-boxes/columns that
+  break ATS parsers). This is required for Phase 1, not deferred: the user needs an actual file
+  to attach when submitting on the job site, not just on-screen text.
 - **`core/scheduler.py`** — APScheduler daily job (default 07:00 local) runs discovery across
   target titles, dedupes against history (idempotent — a second run same day only processes new
   postings), fetches, scores, stores results. Manual "Run search now" button available too.
@@ -66,7 +70,8 @@ Monorepo at `C:\Users\n.sureshmanikandan\Repo1\JobAssistant`:
 - **Dashboard** — pending jobs from the last run: match %, company, title, salary, sponsorship
   flag, source site, "needs manual paste" indicator.
 - **Job review panel** — full JD, tailored resume diff, editable cover letter draft,
-  Approve / Reject / Regenerate buttons.
+  Approve / Reject / Regenerate buttons, **Download Resume PDF** / **Download Cover Letter PDF**
+  buttons (enabled once the user is happy with the edited text).
 - **Manual paste-in form** — paste a URL or raw JD text anytime, outside the daily run.
 - **Application history** — status per job over time: Pending → Approved → Applied →
   (or Rejected / Skipped).
@@ -79,8 +84,9 @@ Monorepo at `C:\Users\n.sureshmanikandan\Repo1\JobAssistant`:
 
 Discover (search API) → fetch public page → LLM structured match-score against criteria →
 surfaces in dashboard if match ≥ threshold AND `sponsorship_required == false` → user opens it →
-tailoring generates resume/cover letter → user edits inline → **user clicks Approve** → the
-job's actual application URL opens in a new tab for the **user to fill and submit themselves**.
+tailoring generates resume/cover letter → user edits inline → user downloads the PDF resume and
+cover letter → **user clicks Approve** → the job's actual application URL opens in a new tab for
+the **user to fill in (attaching the downloaded PDFs) and submit themselves**.
 
 This is a hard boundary: no automation in this system fills out or submits a job application
 form on the user's behalf. The tool's job stops at "here are your tailored materials and the
@@ -121,5 +127,5 @@ link."
 - Automated form-filling or submission on any job site (safety boundary, not a technical gap).
 - LinkedIn/Naukri authenticated scraping (ToS/ban risk — explicitly rejected in favor of search
   API + public-page fetch + manual paste).
-- PDF/DOCX export of tailored resume (plain-text/Markdown editing in-app for phase 1; export
-  can be added later without architecture changes).
+- DOCX export (PDF only for Phase 1 — DOCX can be added later without architecture changes if
+  a specific ATS rejects PDFs).
