@@ -1623,6 +1623,7 @@ git commit -m "feat(backend): add structlog config and LLM call logging"
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel, create_engine, Session
+from sqlalchemy.pool import StaticPool
 from app.main import app
 from app.db import session as db_session
 from app.db.models import Job
@@ -1630,7 +1631,12 @@ from app.db.models import Job
 
 @pytest.fixture
 def client(monkeypatch):
-    engine = create_engine("sqlite://", connect_args={"check_same_thread": False})
+    # StaticPool is required: plain "sqlite://" gives each new connection its
+    # own separate in-memory DB, so the tables created here would otherwise
+    # vanish before the app's overridden session ever sees them.
+    engine = create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+    )
     SQLModel.metadata.create_all(engine)
 
     def override_get_session():
