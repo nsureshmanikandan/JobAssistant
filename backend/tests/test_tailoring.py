@@ -1,6 +1,6 @@
 import json
 import pytest
-from app.services.tailoring import tailor_job, TailoredContent
+from app.services.tailoring import tailor_job, TailoredContent, extract_candidate_name, build_cover_letter_header
 from app.llm.base import LLMResponse
 
 
@@ -24,3 +24,27 @@ async def test_tailor_job_parses_valid_json():
     assert isinstance(result, TailoredContent)
     assert result.tailored_resume.startswith("SUMMARY")
     assert "Dear Hiring Manager" in result.cover_letter
+
+
+def test_extract_candidate_name_returns_first_nonblank_line():
+    resume = "\n\nSURESH MANIKANDAN NATARAJAN\nAgentic AI Architect\n..."
+    assert extract_candidate_name(resume) == "SURESH MANIKANDAN NATARAJAN"
+
+
+def test_extract_candidate_name_falls_back_when_resume_empty():
+    assert extract_candidate_name("   \n  \n") == "Candidate"
+
+
+def test_build_cover_letter_header_includes_all_fields():
+    header = build_cover_letter_header(
+        candidate_name="Suresh Manikandan Natarajan",
+        candidate_location="Chennai",
+        company="Acme Corp",
+        job_location="Chennai",
+        role_title="GenAI Architect",
+    )
+    assert "Suresh Manikandan Natarajan" in header
+    assert "Chennai" in header
+    assert "Acme Corp" in header
+    assert "Subject: Application for GenAI Architect Position" in header
+    assert "Hiring Manager" in header

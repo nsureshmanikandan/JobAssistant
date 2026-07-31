@@ -34,6 +34,10 @@ export default function JobReview() {
   };
 
   const handleApprove = async () => {
+    // window.open must run synchronously inside the click handler, before any
+    // await — once an async gap passes, browsers no longer treat it as a
+    // direct user gesture and silently block the popup.
+    window.open(job.source_url, "_blank", "noopener,noreferrer");
     await api.approveJob(jobId);
     navigate("/");
   };

@@ -1,11 +1,11 @@
 import time
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import Session, select
-from app.criteria import build_criteria_text, get_or_create_criteria
+from app.criteria import build_criteria_text, get_or_create_criteria, primary_location
 from app.db.session import get_session
 from app.db.models import Job, ResumeVersion, Application
 from app.llm.factory import get_llm_provider
-from app.services.tailoring import tailor_job
+from app.services.tailoring import tailor_job, build_cover_letter_header, extract_candidate_name
 from app.services.scoring import score_job
 from app.services.export import render_resume_pdf, render_cover_letter_pdf
 from app.services.dedupe import job_dedupe_key
@@ -118,8 +118,17 @@ async def tailor(job_id: int, session: Session = Depends(get_session)):
             latency_ms=latency_ms, success=success, error=error,
         )
 
+    criteria = get_or_create_criteria(session)
+    header = build_cover_letter_header(
+        candidate_name=extract_candidate_name(master.content),
+        candidate_location=primary_location(criteria),
+        company=job.company,
+        job_location=job.location,
+        role_title=job.title,
+    )
+
     job.tailored_resume = result.tailored_resume
-    job.tailored_cover_letter = result.cover_letter
+    job.tailored_cover_letter = f"{header}\n{result.cover_letter}"
     session.add(job)
     session.commit()
     session.refresh(job)
